@@ -11,7 +11,8 @@ try:
 except ImportError:
     c_encode_basestring = None
 try:
-    from _json import make_encoder as c_make_encoder
+    # from _json import make_encoder as c_make_encoder
+    raise ImportError
 except ImportError:
     c_make_encoder = None
 
@@ -436,8 +437,11 @@ def _make_iterencode(markers, _default, _encoder, _indent, _floatstr,
                 if markerid in markers:
                     raise ValueError("Circular reference detected")
                 markers[markerid] = o
-            o = _default(o)
-            yield from _iterencode(o, _current_indent_level)
+            if callable(getattr(o, "__json__", False)):
+                yield from _iterencode(o.__json__(), _current_indent_level)
+            else:
+                o = _default(o)
+                yield from _iterencode(o, _current_indent_level)
             if markers is not None:
                 del markers[markerid]
     return _iterencode
